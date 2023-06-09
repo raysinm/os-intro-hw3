@@ -81,3 +81,7 @@ int RequestQueue_front(RequestQueue* queue, QueueError* error){
     *error = QUEUE_EMPTY;
     return -1;
 }
+
+int RequestQueue_size(RequestQueue* queue){
+    return queue->size;
+}

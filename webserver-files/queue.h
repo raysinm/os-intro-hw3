@@ -29,3 +29,4 @@ bool RequestQueue_isempty(RequestQueue* queue);
 int RequestQueue_dequeue(RequestQueue* queue, QueueError* error);
 QueueError RequestQueue_queue(RequestQueue* queue, int new_fd);
 int RequestQueue_front(RequestQueue* queue, QueueError* error);
+int RequestQueue_size(RequestQueue* queue);
