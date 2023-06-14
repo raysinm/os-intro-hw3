@@ -22,6 +22,22 @@ RequestQueue* RequestQueue_create(int capacity){
     return queue;
 }
 
+void RequestQueue_destroy(RequestQueue *queue){
+    if (queue->size == 0){
+        free(queue);
+        return;
+    }
+
+    QueueNode* node = queue->head;
+    QueueNode* next = queue->head; 
+    while(node!=NULL){
+        next = node->next;
+        free(node);
+        node = next;
+    }
+    return;
+}
+
 bool RequestQueue_isempty(RequestQueue* queue){
     return queue->size == 0;
 }
@@ -71,6 +87,49 @@ int RequestQueue_dequeue(RequestQueue* queue, QueueError* error){
 
     return ret_fd;
 }
+
+QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd){
+    if(queue->size == 0){
+        return QUEUE_EMPTY;
+    }
+    QueueNode* node = queue->head->next;
+    QueueNode* prev = queue->head;
+
+    if (queue->head->fd == target_fd){
+        queue->head = queue->head->next;
+        free(prev);
+
+        --(queue->size);
+        if (queue->size == 0){
+            queue->head = NULL;
+            queue->tail = NULL;
+        }
+
+        return QUEUE_SUCCESS;
+    }
+
+    while(node != NULL){
+        if (node->fd == target_fd){
+            prev->next = node->next;
+            free(node);
+
+            --(queue->size);
+            if (queue->size == 0){
+                queue->tail = NULL;
+            }
+
+            return QUEUE_SUCCESS;
+        }
+        prev = node;
+        node = node->next;
+    }
+
+    return QUEUE_NOT_FOUND;
+
+
+}
+
+
 
 int RequestQueue_front(RequestQueue* queue, QueueError* error){
     if (queue->size!=0 && queue->head){

@@ -89,10 +89,19 @@ int main(int argc, char *argv[])
   /* Open a single connection to the specified host and port */
   clientfd = Open_clientfd(host, port);
   
+  printf("Client: Starting to send a request :)\n");
+
   clientSend(clientfd, filename);
+
+  printf("Client: Returned from the request\n");
+  
   clientPrint(clientfd);
-    
+
+  printf("Client: Returned from clientPrint\n");
+  
   Close(clientfd);
+
+  printf("Client: Returned from Close\n");
 
   exit(0);
 }

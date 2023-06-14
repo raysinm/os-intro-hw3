@@ -46,6 +46,7 @@ int main(){
     assert(error == QUEUE_SUCCESS);     // Should succeed twice
     assert(front == 0);     // And return 0 twice
     printf("FRONT TEST PASSED\n");
+    
 
     /*DEQUEUE TEST*/
     dequeue = RequestQueue_dequeue(queue, &error);
@@ -65,6 +66,31 @@ int main(){
     assert(error == QUEUE_EMPTY);
     assert(ret < 0);
     printf("DEQUEUE TEST PASSED\n");
+
+    /*DEQUEUE SPECIFIC ITEM TEST*/
+    error = RequestQueue_dequeue_item(queue, 0);
+    assert(error == QUEUE_EMPTY);
+
+    for (int i=0; i<4; i++){
+        error = RequestQueue_queue(queue, i);
+        assert(error==QUEUE_SUCCESS);
+    }
+    for (int i=0; i<4; i++){
+        error = RequestQueue_dequeue_item(queue, i);
+        fflush(stdout);
+
+        printf("%d", i);
+        assert(error == QUEUE_SUCCESS);
+        assert(RequestQueue_size(queue) == 3);
+        
+        error = RequestQueue_queue(queue,i);
+        assert(error == QUEUE_SUCCESS);
+        assert(RequestQueue_size(queue) == 4);
+
+    }
+    error = RequestQueue_dequeue_item(queue, 7);
+    assert(error == QUEUE_NOT_FOUND);
+
 
     printf("=====PASSED ALL TESTS=====\n");
 
