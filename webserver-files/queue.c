@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "queue.h"
 
 
 
-QueueNode* QueueNode_create(int fd){
+QueueNode* QueueNode_create(int fd, struct timeval arrival){
     QueueNode* node = (QueueNode*)malloc(sizeof(node));
     node -> fd = fd;
+    node-> arrival = arrival;
     node -> next = NULL;
     return node;
 }
@@ -43,13 +45,13 @@ bool RequestQueue_isempty(RequestQueue* queue){
 }
 
 
-QueueError RequestQueue_queue(RequestQueue* queue, int new_fd){
+QueueError RequestQueue_queue(RequestQueue* queue, int new_fd, struct timeval arrival){
     if (queue->size == queue->capacity){
         return QUEUE_FULL;
     }
 
     QueueNode* tail = queue->tail;
-    QueueNode* new_node = QueueNode_create(new_fd);
+    QueueNode* new_node = QueueNode_create(new_fd, arrival);
     if (tail == NULL){
         queue->tail = new_node;
         queue->head = new_node;
@@ -63,6 +65,14 @@ QueueError RequestQueue_queue(RequestQueue* queue, int new_fd){
     queue->tail = tail->next;
     ++(queue->size);
     return QUEUE_SUCCESS;
+}
+
+struct timeval RequestQueue_head_arrival(RequestQueue* queue, QueueError* error){
+    if (queue->size == 0){
+        *error = QUEUE_EMPTY;
+        return (struct timeval){0,0};
+    }
+    return queue->head->arrival;
 }
 
 int RequestQueue_dequeue(RequestQueue* queue, QueueError* error){

@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 typedef enum{
     QUEUE_SUCCESS,
@@ -13,6 +14,7 @@ typedef struct RequestQueue RequestQueue;
 
 struct QueueNode{
     int fd;
+    struct timeval arrival;
     QueueNode* next;
 };
 
@@ -23,13 +25,14 @@ struct RequestQueue{
     int size;
 };
 
-QueueNode* QueueNode_create(int fd);
+QueueNode* QueueNode_create(int fd, struct timeval arrival);
 
 RequestQueue* RequestQueue_create(int capacity);
 void RequestQueue_destroy(RequestQueue *queue);
 bool RequestQueue_isempty(RequestQueue* queue);
+struct timeval RequestQueue_head_arrival(RequestQueue* queue, QueueError* error);
 int RequestQueue_dequeue(RequestQueue* queue, QueueError* error);
-QueueError RequestQueue_queue(RequestQueue* queue, int new_fd);
+QueueError RequestQueue_queue(RequestQueue* queue, int new_fd, struct timeval arrival);
 QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd);
 int RequestQueue_front(RequestQueue* queue, QueueError* error);
 int RequestQueue_size(RequestQueue* queue);
