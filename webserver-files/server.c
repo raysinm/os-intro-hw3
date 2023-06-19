@@ -20,6 +20,8 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t cond_full = PTHREAD_COND_INITIALIZER;
 
+__thread ThreadStats th_stats;
+
 // __thread int th_stat_count = 0;
 // __thread int th_dyn_count = 0;
 // // __thread int th_tot_count = 0;
@@ -29,16 +31,18 @@ pthread_cond_t cond_full = PTHREAD_COND_INITIALIZER;
 // __thread struct timeval handle;
 
 
-void* request_manager(){
+void* request_manager(void* id){    //id is int
     QueueError err;
-    stats.th_stat_count = 0;
-    stats.th_dyn_count = 0;
     
+    th_stats.th_id = *((int*)id);
+    th_stats.th_stat_count = 0;
+    th_stats.th_dyn_count = 0;
+
     while (1){
         
         pthread_mutex_lock(&lock);
         while (RequestQueue_isempty(waiting_q)){
-            printf("Thread: waiting for request\n");
+            // printf("Thread: waiting for request\n");
         //UNLOCK - ?
             pthread_cond_wait(&cond_empty, &lock);
         }
@@ -46,25 +50,25 @@ void* request_manager(){
 
         pthread_mutex_lock(&lock);
         //STATS: arrival time
-        stats.arrival = RequestQueue_head_arrival(waiting_q, &err);
+        th_stats.arrival = RequestQueue_head_arrival(waiting_q, &err);
         int req_fd = RequestQueue_dequeue(waiting_q, &err);   //Also deletes the req from waiting_q
         pthread_mutex_unlock(&lock);
         
         //STATS: handle time
-        gettimeofday(&stats.handle, NULL);
-        printf("Thread: Handling request\n");
+        gettimeofday(&(th_stats.handle), NULL);
+        // printf("Thread: Handling request\n");
 
         if (err != QUEUE_SUCCESS){
             //HANDLE ERROR
         }
         else{
             pthread_mutex_lock(&lock);        
-            RequestQueue_queue(running_q, req_fd, stats.arrival);
+            RequestQueue_queue(running_q, req_fd, th_stats.arrival);
             pthread_mutex_unlock(&lock);
             
-            requestHandle(req_fd, &stats);
+            requestHandle(req_fd, &th_stats);
             Close(req_fd);
-            printf("Thread: handled and closed the request\n");
+            //printf("Thread: handled and closed the request\n");
 
             pthread_mutex_lock(&lock);        
             err = RequestQueue_dequeue_item(running_q, req_fd);
@@ -74,7 +78,6 @@ void* request_manager(){
     }
 }
 
-// HW3: Parse the new arguments too
 void getargs(int* port, int* threadsnum, int* queuesize, char* schedalg, int* max_size, int argc, char *argv[])
 {
     if (argc < 5) {
@@ -109,17 +112,17 @@ int main(int argc, char *argv[])
     running_q = RequestQueue_create(queuesize);
     
     // Initialize and create thread pool
-    pthread_t* ths = (pthread_t*)malloc(threadsnum*sizeof(ths));
+    pthread_t* ths = (pthread_t*)malloc(threadsnum*sizeof(*ths));
 
     for (int i=0; i<threadsnum; i++){
-        if(pthread_create(&ths[i], NULL, &request_manager, NULL)!=0){
+        if(pthread_create(&ths[i], NULL, &request_manager, (void*)&i)!=0){
             return 1;   //TODO: Error handling
         }
     }
 
     listenfd = Open_listenfd(port);
 
-    printf("Server: Starting to listen to incoming requests :)\n");
+    //printf("Server: Starting to listen to incoming requests :)\n");
 
     bool add_to_waiting = true;
 
@@ -128,8 +131,8 @@ int main(int argc, char *argv[])
         
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-        gettimeofday(&arrival, NULL);
-        printf("Server: Recieved a request\n");
+        gettimeofday(&(th_stats.arrival), NULL);
+        //printf("Server: Recieved a request\n");
 
         pthread_mutex_lock(&lock);
         while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) > queuesize){
@@ -179,7 +182,7 @@ int main(int argc, char *argv[])
         }
         else{
             pthread_mutex_lock(&lock);        
-            err = RequestQueue_queue(waiting_q, connfd, arrival);
+            err = RequestQueue_queue(waiting_q, connfd, th_stats.arrival);
             pthread_mutex_unlock(&lock);
             
             if ( err!= QUEUE_SUCCESS ){
@@ -187,7 +190,7 @@ int main(int argc, char *argv[])
 
             }
             pthread_cond_signal(&cond_empty);
-            printf("Server: Forwarded request to threads\n");
+            // printf("Server: Forwarded request to threads\n");
         }
         
     }

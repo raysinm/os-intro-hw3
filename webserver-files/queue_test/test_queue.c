@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
 #include "queue.h"
 
@@ -9,6 +10,10 @@ int main(){
     
     int front, dequeue, ret;
     QueueError error;
+
+    struct timeval arrival;
+    struct timeval arrival_ret;
+    
 
     /*CREATE TEST*/
     RequestQueue* queue = RequestQueue_create(10);
@@ -26,14 +31,16 @@ int main(){
 
     /*QUEUE TEST*/
     for(int i=0; i<10; i++){
-        error = RequestQueue_queue(queue, i);
+        gettimeofday(&arrival, NULL);;
+        error = RequestQueue_queue(queue, i, arrival);
         assert(error == QUEUE_SUCCESS);
     }
     printf("QUEUE TEST PASSED\n");
 
 
     /*FULL TEST*/
-    error = RequestQueue_queue(queue, 11);    // Should fail
+    gettimeofday(&arrival, NULL);;    
+    error = RequestQueue_queue(queue, 11, arrival);    // Should fail
     assert(error == QUEUE_FULL);
     printf("FULL TEST PASSED\n");
 
@@ -47,7 +54,12 @@ int main(){
     assert(front == 0);     // And return 0 twice
     printf("FRONT TEST PASSED\n");
     
-
+    /*HEAD ARRIVAL TEST*/
+    for (int i=0; i<10; i++){
+        arrival_ret = RequestQueue_head_arrival(queue, &error);
+        printf("Stat-Req-Arrival:: %lu.%06lu\n", arrival_ret.tv_sec, arrival_ret.tv_usec);
+    }
+    
     /*DEQUEUE TEST*/
     dequeue = RequestQueue_dequeue(queue, &error);
     assert(error == QUEUE_SUCCESS);
@@ -72,10 +84,12 @@ int main(){
     assert(error == QUEUE_EMPTY);
 
     for (int i=0; i<4; i++){
-        error = RequestQueue_queue(queue, i);
+        gettimeofday(&arrival, NULL);;
+        error = RequestQueue_queue(queue, i, arrival);
         assert(error==QUEUE_SUCCESS);
     }
     for (int i=0; i<4; i++){
+        
         error = RequestQueue_dequeue_item(queue, i);
         fflush(stdout);
 
@@ -83,7 +97,8 @@ int main(){
         assert(error == QUEUE_SUCCESS);
         assert(RequestQueue_size(queue) == 3);
         
-        error = RequestQueue_queue(queue,i);
+        gettimeofday(&arrival, NULL);;
+        error = RequestQueue_queue(queue,i, arrival);
         assert(error == QUEUE_SUCCESS);
         assert(RequestQueue_size(queue) == 4);
 

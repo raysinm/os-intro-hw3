@@ -124,8 +124,8 @@ int Open_listenfd(int port);
 #endif /* __CSAPP_H__ */
 
 
-__thread struct stats{
-    int th_id;
+typedef struct{
+    pthread_t th_id;
     int th_stat_count;
     int th_dyn_count;
     // __thread int th_tot_count = 0;
@@ -133,6 +133,5 @@ __thread struct stats{
     // __thread time_t dispatch_time;
     struct timeval arrival;
     struct timeval handle;
-};
+} ThreadStats;
 
-typedef __thread struct stats stats;

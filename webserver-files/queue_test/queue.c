@@ -7,7 +7,7 @@
 
 
 QueueNode* QueueNode_create(int fd, struct timeval arrival){
-    QueueNode* node = (QueueNode*)malloc(sizeof(node));
+    QueueNode* node = (QueueNode*)malloc(sizeof(*node));
     node -> fd = fd;
     node-> arrival = arrival;
     node -> next = NULL;
