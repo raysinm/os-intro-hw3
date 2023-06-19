@@ -30,7 +30,7 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-   sprintf(buf, "Stat-Req-Arrival:: %lu.%06lu\r\n", stats->arrival.tv_sec, stats->arrival.tv_usec);
+   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, stats->arrival.tv_sec, stats->arrival.tv_usec);
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, dispatch.tv_sec, dispatch.tv_usec);
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, stats->th_id);
    sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, stats->th_stat_count+stats->th_dyn_count);
@@ -123,8 +123,7 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, ThreadStats* sta
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, stats->th_id);
    sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, (stats->th_stat_count+stats->th_dyn_count));
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, stats->th_stat_count);
-   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, stats->th_dyn_count);
-   
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, stats->th_dyn_count);
    Rio_writen(fd, buf, strlen(buf));
    
    pid_t pid = Fork();   // Fixed Segel bug
@@ -133,9 +132,15 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, ThreadStats* sta
       Setenv("QUERY_STRING", cgiargs, 1);
       /* When the CGI process writes to stdout, it will instead go to the socket */
       Dup2(fd, STDOUT_FILENO);
-      Execve(filename, emptylist, environ);
+      Execve(filename, emptylist, environ);  
    }
-   WaitPid(pid, NULL, 0);   // Fixed Segel bug
+   
+   WaitPid(pid, NULL, WNOHANG);   // Fixed Segel bug
+   
+
+   // return;   
+   // sprintf(buf, "\r\n\r\n", buf);
+   // Rio_writen(fd, buf, strlen(buf));
 }
 
 
@@ -182,6 +187,7 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadStats* stats
    Rio_writen(fd, srcp, filesize);
    Munmap(srcp, filesize);
 
+   return;
 }
 
 // handle a request

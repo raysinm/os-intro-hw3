@@ -125,7 +125,7 @@ int Open_listenfd(int port);
 
 
 typedef struct{
-    pthread_t th_id;
+    int th_id;
     int th_stat_count;
     int th_dyn_count;
     // __thread int th_tot_count = 0;

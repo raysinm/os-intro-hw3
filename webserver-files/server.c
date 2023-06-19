@@ -141,12 +141,12 @@ int main(int argc, char *argv[])
                 add_to_waiting = true;
                 break;
             }
-            else if (strcmp(schedalg, "drop_tail")==0){
+            else if (strcmp(schedalg, "dt")==0){
                 Close(connfd);
                 add_to_waiting = false;
                 break;
             }
-            else if (strcmp(schedalg, "drop_head")==0){
+            else if (strcmp(schedalg, "dh")==0){
                 RequestQueue_dequeue(waiting_q, &err);
                 // err = (waiting_q, connfd);
                 // if (err!=QUEUE_SUCCESS){
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
                 add_to_waiting = true;
                 break;
             }
-            else if (strcmp(schedalg, "block_flush")==0){
+            else if (strcmp(schedalg, "bf")==0){
                 while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) != 0){
                     pthread_cond_wait(&cond_full, &lock);
                 }
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
                 add_to_waiting = false;
                 break;
             }
-            else if (strcmp(schedalg, "drop_random")==0){
+            else if (strcmp(schedalg, "random")==0){
                 RequestQueue_drop_half_random(waiting_q);
                 add_to_waiting = true;
                 break;

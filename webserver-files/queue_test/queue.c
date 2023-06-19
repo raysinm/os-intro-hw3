@@ -176,7 +176,8 @@ void RequestQueue_drop_half_random(RequestQueue* queue){
     if (RequestQueue_isempty(queue)){
         return;
     }
-    while(queue->size >= (int)((queue->capacity)/2)){
+    int end_num = (int)((queue->size)/2);
+    while(queue->size > end_num){
         int* vals = RequestQueue_get_vals(queue);
         if (vals != NULL){
             int i_drop = rand()%(queue->size + 1);

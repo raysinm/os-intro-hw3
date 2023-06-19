@@ -108,7 +108,7 @@ int main(){
         assert(RequestQueue_size(queue) == 3);
         
         gettimeofday(&arrival, NULL);;
-        error = RequestQueue_queue(queue,i, arrival);
+        error = RequestQueue_queue(queue,2*i, arrival);
         assert(error == QUEUE_SUCCESS);
         assert(RequestQueue_size(queue) == 4);
 
