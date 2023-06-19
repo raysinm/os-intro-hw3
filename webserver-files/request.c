@@ -135,7 +135,7 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, ThreadStats* sta
       Execve(filename, emptylist, environ);  
    }
    
-   WaitPid(pid, NULL, WNOHANG);   // Fixed Segel bug
+   WaitPid(pid, NULL, 0);   // Fixed Segel bug
    
 
    // return;   

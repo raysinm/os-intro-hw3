@@ -189,7 +189,6 @@ int main(int argc, char *argv[])
             
             if ( err!= QUEUE_SUCCESS ){
                 //TODO: handle error
-
             }
             pthread_cond_signal(&cond_empty);
             // printf("Server: Forwarded request to threads\n");
