@@ -154,12 +154,12 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadStats* stats
    Close(srcfd);
 
    //DEBUG
-   printf("%sStat-Req-Arrival:: %lu.%06lu\n", stats->arrival.tv_sec, stats->arrival.tv_usec);
-   printf("%sStat-Req-Dispatch:: %lu.%06lu\n", buf, dispatch.tv_sec, dispatch.tv_usec);
-   printf("%sStat-Thread-Id:: %d\n", buf, stats->th_id);
-   printf("%sStat-Thread-Count:: %d\n", buf, (stats->th_stat_count+stats->th_dyn_count));
-   printf("%sStat-Thread-Static:: %d\n", buf, stats->th_stat_count);
-   printf("%sStat-Thread-Dynamic:: %d\n\n", buf, stats->th_dyn_count);
+   // printf("%sStat-Req-Arrival:: %lu.%06lu\n", stats->arrival.tv_sec, stats->arrival.tv_usec);
+   // printf("%sStat-Req-Dispatch:: %lu.%06lu\n", buf, dispatch.tv_sec, dispatch.tv_usec);
+   // printf("%sStat-Thread-Id:: %d\n", buf, stats->th_id);
+   // printf("%sStat-Thread-Count:: %d\n", buf, (stats->th_stat_count+stats->th_dyn_count));
+   // printf("%sStat-Thread-Static:: %d\n", buf, stats->th_stat_count);
+   // printf("%sStat-Thread-Dynamic:: %d\n\n", buf, stats->th_dyn_count);
    
 
 

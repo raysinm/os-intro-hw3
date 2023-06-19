@@ -36,3 +36,5 @@ QueueError RequestQueue_queue(RequestQueue* queue, int new_fd, struct timeval ar
 QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd);
 int RequestQueue_front(RequestQueue* queue, QueueError* error);
 int RequestQueue_size(RequestQueue* queue);
+int* RequestQueue_get_vals(RequestQueue* queue);
+void RequestQueue_drop_half_random(RequestQueue* queue);

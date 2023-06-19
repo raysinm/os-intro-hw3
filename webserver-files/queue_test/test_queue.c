@@ -57,8 +57,18 @@ int main(){
     /*HEAD ARRIVAL TEST*/
     for (int i=0; i<10; i++){
         arrival_ret = RequestQueue_head_arrival(queue, &error);
-        printf("Stat-Req-Arrival:: %lu.%06lu\n", arrival_ret.tv_sec, arrival_ret.tv_usec);
+        printf("Stat-Req-Arrival:: %lu.%06lu\n", arrival_ret.tv_sec, arrival_ret.tv_usec);   
+        ret = RequestQueue_dequeue(queue, &error);
+        assert(error == QUEUE_SUCCESS);
+        assert(ret == i);
     }
+    for(int i=0; i<10; i++){
+        gettimeofday(&arrival, NULL);;
+        error = RequestQueue_queue(queue, i, arrival);
+        assert(error == QUEUE_SUCCESS);
+    }
+    printf("HEAD ARRIVAL TEST PASSED\n");
+
     
     /*DEQUEUE TEST*/
     dequeue = RequestQueue_dequeue(queue, &error);
@@ -105,7 +115,17 @@ int main(){
     }
     error = RequestQueue_dequeue_item(queue, 7);
     assert(error == QUEUE_NOT_FOUND);
+    printf("DEQUEUE SPECIFIC ITEM TEST PASSED\n");
 
+    /*DROP HALF RANDOM TEST*/
+    assert(RequestQueue_size(queue)==4);
+    RequestQueue_drop_half_random(queue);
+    assert(RequestQueue_size(queue)==2);
+    RequestQueue_drop_half_random(queue);
+    assert(RequestQueue_size(queue)==1);
+    RequestQueue_drop_half_random(queue);
+    assert(RequestQueue_size(queue)==0);
+    printf("DROP HALF RANDOM TEST PASSED\n");
 
     printf("=====PASSED ALL TESTS=====\n");
 

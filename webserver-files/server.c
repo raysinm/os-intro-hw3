@@ -172,7 +172,9 @@ int main(int argc, char *argv[])
                 break;
             }
             else if (strcmp(schedalg, "drop_random")==0){
-                //TODO
+                RequestQueue_drop_half_random(waiting_q);
+                add_to_waiting = true;
+                break;
             }
         }
         pthread_mutex_unlock(&lock);
