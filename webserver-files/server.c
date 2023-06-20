@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
         //printf("Server: Recieved a request\n");
 
         pthread_mutex_lock(&lock);
-        while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) > queuesize){
+        while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) >= queuesize){
             if (strcmp(schedalg, "block")==0){
                 pthread_cond_wait(&cond_full, &lock);
                 add_to_waiting = true;
@@ -147,6 +147,9 @@ int main(int argc, char *argv[])
                 break;
             }
             else if (strcmp(schedalg, "dh")==0){
+                if (RequestQueue_isempty(waiting_q)){
+                    break;
+                }
                 int fd_drop = RequestQueue_dequeue(waiting_q, &err);
                 Close(fd_drop);
                 // err = (waiting_q, connfd);
@@ -168,6 +171,7 @@ int main(int argc, char *argv[])
                 Close(connfd);
                 if (RequestQueue_size(waiting_q) + RequestQueue_size(running_q) < max_size){
                     ++(waiting_q->capacity);
+                    ++(running_q->capacity);
                 }
                 add_to_waiting = false;
                 break;
