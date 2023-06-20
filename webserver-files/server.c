@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
                 break;
             }
             else if (strcmp(schedalg, "dh")==0){
-                RequestQueue_dequeue(waiting_q, &err);
+                int fd_drop = RequestQueue_dequeue(waiting_q, &err);
+                Close(fd_drop);
                 // err = (waiting_q, connfd);
                 // if (err!=QUEUE_SUCCESS){
                 //     //Handle error;
@@ -172,9 +173,31 @@ int main(int argc, char *argv[])
                 break;
             }
             else if (strcmp(schedalg, "random")==0){
-                RequestQueue_drop_half_random(waiting_q);
+                // RequestQueue_drop_half_random(waiting_q);
+                if (RequestQueue_isempty(waiting_q)){
+                    Close(connfd);
+                    break;
+                }
+                else{
+                    int end_num = (int)((RequestQueue_size(waiting_q))/2);
+                    
+                    while(RequestQueue_size(waiting_q) > end_num){
+                        int* vals = RequestQueue_get_vals(waiting_q);
+                        
+                        if (vals != NULL){
+                            int i_drop = rand()%(RequestQueue_size(waiting_q) + 1);
+                            int fd_drop = vals[i_drop];
+                            
+                            RequestQueue_dequeue_item(waiting_q, fd_drop);
+                            
+                            Close(fd_drop);
+                            
+                            free(vals);
+                        }
+                    }
                 add_to_waiting = true;
                 break;
+                }                
             }
         }
         pthread_mutex_unlock(&lock);
