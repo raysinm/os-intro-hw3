@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <assert.h>
 
 #include "segel.h"
 #include "request.h"
@@ -39,7 +40,7 @@ void* request_manager(void* id){    //id is int
     th_stats.th_id = *((int*)id);
     // pthread_mutex_unlock(&lock);
     free(id);
-    printf("Thread id: %d", th_stats.th_id);
+    // printf("Thread id: %d", th_stats.th_id);
     th_stats.th_stat_count = 0;
     th_stats.th_dyn_count = 0;
     th_stats.th_total_count = 0;
@@ -52,9 +53,9 @@ void* request_manager(void* id){    //id is int
         //UNLOCK - ?
             pthread_cond_wait(&cond_th_empty, &lock);
         }
-        
+
         gettimeofday(&(th_stats.handle), NULL);
-        
+
         //STATS: arrival time
         th_stats.arrival = RequestQueue_head_arrival(waiting_q, &err);
         
@@ -62,6 +63,7 @@ void* request_manager(void* id){    //id is int
         int req_fd = RequestQueue_dequeue(waiting_q, &err);   //Also deletes the req from waiting_q
         
         RequestQueue_queue(running_q, req_fd, th_stats.arrival);
+        
         
         pthread_mutex_unlock(&lock);
 
@@ -109,7 +111,7 @@ void getargs(int* port, int* threadsnum, int* queuesize, char* schedalg, int* ma
 int main(int argc, char *argv[])
 {
     int listenfd, connfd, port, clientlen, threadsnum, queuesize, max_size;
-    char schedalg[12];
+    char schedalg[13];
     struct sockaddr_in clientaddr;
     QueueError err;
 
@@ -144,6 +146,7 @@ int main(int argc, char *argv[])
 
         pthread_mutex_lock(&lock);
         if (RequestQueue_size(waiting_q) + RequestQueue_size(running_q) >= queuesize){
+            
             if (strcmp(schedalg, "block")==0){
                 while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) >= queuesize){
                     pthread_cond_wait(&cond_main_full, &lock);
@@ -207,10 +210,10 @@ int main(int argc, char *argv[])
                             int i_drop = rand()%(RequestQueue_size(waiting_q));
                             int fd_drop = vals[i_drop];
                             
-                            RequestQueue_dequeue_item(waiting_q, fd_drop);
+                            err = RequestQueue_dequeue_item(waiting_q, fd_drop);
+                            assert(err==QUEUE_SUCCESS);
                             
                             Close(fd_drop);
-                            
                             free(vals);
                         }
                         else{
@@ -231,9 +234,8 @@ int main(int argc, char *argv[])
         
         err = RequestQueue_queue(waiting_q, connfd, th_stats.arrival);
         
-        if ( err!= QUEUE_SUCCESS ){
-            //TODO: handle error
-        }
+        assert(err==QUEUE_SUCCESS);
+
         pthread_cond_signal(&cond_th_empty);
         // printf("Server: Forwarded request to threads\n");
         pthread_mutex_unlock(&lock);

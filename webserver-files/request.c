@@ -15,7 +15,7 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    sprintf(body, "%s<body bgcolor=""fffff"">\r\n", body);
    sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
    sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
-   
+   sprintf(body, "%s<hr>OS-HW3 Web Server\r\n", body);   
    
    // Write out the header information for this response
    sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
@@ -30,10 +30,10 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, stats->arrival.tv_sec, stats->arrival.tv_usec);
+   sprintf(buf, "Stat-Req-Arrival:: %lu.%06lu\r\n", stats->arrival.tv_sec, stats->arrival.tv_usec);
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, dispatch.tv_sec, dispatch.tv_usec);
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, stats->th_id);
-   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, stats->th_stat_count+stats->th_dyn_count);
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, stats->th_total_count);
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, stats->th_stat_count);
    sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, stats->th_dyn_count);
    Rio_writen(fd, buf, strlen(buf));
@@ -121,7 +121,7 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, ThreadStats* sta
    sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, stats->arrival.tv_sec, stats->arrival.tv_usec);
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, dispatch.tv_sec, dispatch.tv_usec);
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, stats->th_id);
-   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, (stats->th_stat_count+stats->th_dyn_count));
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, stats->th_total_count);
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, stats->th_stat_count);
    sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n", buf, stats->th_dyn_count);
    Rio_writen(fd, buf, strlen(buf));
@@ -153,16 +153,6 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadStats* stats
    // which would require that we allocate a buffer, we memory-map the file
    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
    Close(srcfd);
-
-   //DEBUG
-   // printf("%sStat-Req-Arrival:: %lu.%06lu\n", stats->arrival.tv_sec, stats->arrival.tv_usec);
-   // printf("%sStat-Req-Dispatch:: %lu.%06lu\n", buf, dispatch.tv_sec, dispatch.tv_usec);
-   // printf("%sStat-Thread-Id:: %d\n", buf, stats->th_id);
-   // printf("%sStat-Thread-Count:: %d\n", buf, (stats->th_stat_count+stats->th_dyn_count));
-   // printf("%sStat-Thread-Static:: %d\n", buf, stats->th_stat_count);
-   // printf("%sStat-Thread-Dynamic:: %d\n\n", buf, stats->th_dyn_count);
-   
-
 
    // put together response
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
@@ -196,9 +186,6 @@ void requestHandle(int fd, ThreadStats* stats)
    char filename[MAXLINE], cgiargs[MAXLINE];
    rio_t rio;
 
-   ++(stats->th_total_count);
-
-
    Rio_readinitb(&rio, fd);
    Rio_readlineb(&rio, buf, MAXLINE);
    sscanf(buf, "%s %s %s", method, uri, version);
@@ -211,9 +198,8 @@ void requestHandle(int fd, ThreadStats* stats)
    /*===========================*/
 
    /*STATS: total requests counter increment*/
-   // ++(stats->th_total_count);
-   /*=======================================*/
-   
+   ++(stats->th_total_count);
+   // /*=======================================*/
    if (strcasecmp(method, "GET")) {
       requestError(fd, method, "501", "Not Implemented", "OS-HW3 Server does not implement this method", stats, dispatch);
       return;
