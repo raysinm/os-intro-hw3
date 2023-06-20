@@ -36,9 +36,9 @@ void* request_manager(void* id){    //id is int
     QueueError err;
     
     // pthread_mutex_lock(&lock);
-    th_stats.th_id = ((int*)id)[0];
+    th_stats.th_id = *((int*)id);
     // pthread_mutex_unlock(&lock);
-
+    free(id);
     printf("Thread id: %d", th_stats.th_id);
     th_stats.th_stat_count = 0;
     th_stats.th_dyn_count = 0;
@@ -52,6 +52,8 @@ void* request_manager(void* id){    //id is int
         //UNLOCK - ?
             pthread_cond_wait(&cond_th_empty, &lock);
         }
+        
+        gettimeofday(&(th_stats.handle), NULL);
         
         //STATS: arrival time
         th_stats.arrival = RequestQueue_head_arrival(waiting_q, &err);
@@ -67,10 +69,10 @@ void* request_manager(void* id){    //id is int
             //HANDLE ERROR
         }
         
+        // ++(th_stats.th_total_count);
+
         //STATS: handle time
-        gettimeofday(&(th_stats.handle), NULL);
         // printf("Thread: Handling request\n");
-        
         requestHandle(req_fd, &th_stats);
         Close(req_fd);
         //printf("Thread: handled and closed the request\n");
@@ -120,7 +122,8 @@ int main(int argc, char *argv[])
     // Initialize and create thread pool
     pthread_t* ths = (pthread_t*)malloc(threadsnum*sizeof(*ths));
     for (int i=0; i<threadsnum; ++i){
-        int th_id[] = {i,};
+        int* th_id = (int*)malloc(sizeof(*th_id));
+        *th_id = i;
         if(pthread_create(&ths[i], NULL, request_manager, (void*)th_id)!=0){
             return 1;   //TODO: Error handling
         }
@@ -136,6 +139,7 @@ int main(int argc, char *argv[])
 
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+        gettimeofday(&(th_stats.arrival), NULL);
         //printf("Server: Recieved a request\n");
 
         pthread_mutex_lock(&lock);
@@ -166,12 +170,12 @@ int main(int argc, char *argv[])
                 }
             }
             else if (strcmp(schedalg, "bf")==0){
-                Close(connfd);
-                add_to_waiting = false;
 
                 while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) != 0){
                     pthread_cond_wait(&cond_main_empty, &lock);
                 }
+                Close(connfd);
+                add_to_waiting = false;
 
                 // break;
             }
@@ -224,7 +228,6 @@ int main(int argc, char *argv[])
             continue;
         }
         
-        gettimeofday(&(th_stats.arrival), NULL);
         
         err = RequestQueue_queue(waiting_q, connfd, th_stats.arrival);
         

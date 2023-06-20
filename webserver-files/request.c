@@ -196,6 +196,9 @@ void requestHandle(int fd, ThreadStats* stats)
    char filename[MAXLINE], cgiargs[MAXLINE];
    rio_t rio;
 
+   ++(stats->th_total_count);
+
+
    Rio_readinitb(&rio, fd);
    Rio_readlineb(&rio, buf, MAXLINE);
    sscanf(buf, "%s %s %s", method, uri, version);
@@ -208,7 +211,7 @@ void requestHandle(int fd, ThreadStats* stats)
    /*===========================*/
 
    /*STATS: total requests counter increment*/
-   ++(stats->th_total_count);
+   // ++(stats->th_total_count);
    /*=======================================*/
    
    if (strcasecmp(method, "GET")) {
