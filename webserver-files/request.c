@@ -137,10 +137,6 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, ThreadStats* sta
    
    WaitPid(pid, NULL, 0);   // Fixed Segel bug
    
-
-   // return;   
-   // sprintf(buf, "\r\n\r\n", buf);
-   // Rio_writen(fd, buf, strlen(buf));
 }
 
 
@@ -176,7 +172,7 @@ void requestServeStatic(int fd, char *filename, int filesize, ThreadStats* stats
    sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, stats->arrival.tv_sec, stats->arrival.tv_usec);
    sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, dispatch.tv_sec, dispatch.tv_usec);
    sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, stats->th_id);
-   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, (stats->th_stat_count+stats->th_dyn_count));
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, stats->th_total_count);
    sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, stats->th_stat_count);
    sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, stats->th_dyn_count);
    
@@ -209,7 +205,11 @@ void requestHandle(int fd, ThreadStats* stats)
    /*STATS: dispatch calculation*/
    struct timeval dispatch;
    timersub(&(stats->handle), &(stats->arrival), &dispatch);
-   /*___________________________*/
+   /*===========================*/
+
+   /*STATS: total requests counter increment*/
+   ++(stats->th_total_count);
+   /*=======================================*/
    
    if (strcasecmp(method, "GET")) {
       requestError(fd, method, "501", "Not Implemented", "OS-HW3 Server does not implement this method", stats, dispatch);

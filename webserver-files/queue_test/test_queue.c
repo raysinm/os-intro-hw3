@@ -118,7 +118,11 @@ int main(){
     printf("DEQUEUE SPECIFIC ITEM TEST PASSED\n");
 
     /*DROP HALF RANDOM TEST*/
-    assert(RequestQueue_size(queue)==4);
+    gettimeofday(&arrival, NULL);;
+    error = RequestQueue_queue(queue,25, arrival);
+    assert(error == QUEUE_SUCCESS);
+    assert(RequestQueue_size(queue) == 5);
+    // assert(RequestQueue_size(queue)==4);
     RequestQueue_drop_half_random(queue);
     assert(RequestQueue_size(queue)==2);
     RequestQueue_drop_half_random(queue);
