@@ -24,15 +24,6 @@ pthread_cond_t cond_main_empty = PTHREAD_COND_INITIALIZER;
 
 __thread ThreadStats th_stats;
 
-// __thread int th_stat_count = 0;
-// __thread int th_dyn_count = 0;
-// // __thread int th_tot_count = 0;
-// // __thread time_t arrival_time;
-// // __thread time_t dispatch_time;
-// __thread struct timeval arrival;
-// __thread struct timeval handle;
-
-
 void* request_manager(void* id){    //id is int
     QueueError err;
     
@@ -176,11 +167,11 @@ int main(int argc, char *argv[])
             }
             else if (strcmp(schedalg, "bf")==0){
 
-                while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) != 0){
-                    pthread_cond_wait(&cond_main_empty, &lock);
-                }
                 Close(connfd);
                 add_to_waiting = false;
+                while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) > 0){
+                    pthread_cond_wait(&cond_main_empty, &lock);
+                }
                 // pthread_mutex_unlock(&lock);
                 // break;
             }
@@ -215,7 +206,7 @@ int main(int argc, char *argv[])
                             int fd_drop = vals[i_drop];
                             
                             err = RequestQueue_dequeue_item(waiting_q, fd_drop);
-                            assert(err==QUEUE_SUCCESS);
+                            // assert(err==QUEUE_SUCCESS);
                             
                             Close(fd_drop);
                             free(vals);
