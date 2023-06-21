@@ -129,6 +129,23 @@ int main(){
     assert(RequestQueue_size(queue)==1);
     RequestQueue_drop_half_random(queue);
     assert(RequestQueue_size(queue)==0);
+
+    for (int i=0; i<9; i++){
+        gettimeofday(&arrival, NULL);;
+        error = RequestQueue_queue(queue, 4*i, arrival);
+        assert(error == QUEUE_SUCCESS);
+    }
+
+    assert(RequestQueue_size(queue) == 9);
+    // assert(RequestQueue_size(queue)==4);
+    RequestQueue_drop_half_random(queue);
+    assert(RequestQueue_size(queue)==4);
+    RequestQueue_drop_half_random(queue);
+    assert(RequestQueue_size(queue)==2);
+    RequestQueue_drop_half_random(queue);
+    assert(RequestQueue_size(queue)==1);
+
+
     printf("DROP HALF RANDOM TEST PASSED\n");
 
     printf("=====PASSED ALL TESTS=====\n");

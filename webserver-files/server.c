@@ -123,12 +123,12 @@ int main(int argc, char *argv[])
     
     // Initialize and create thread pool
     pthread_t* ths = (pthread_t*)malloc(threadsnum*sizeof(*ths));
-    for (int i=0; i<threadsnum; ++i){
+    for (int i=0; i<threadsnum; i++){
         int* th_id = (int*)malloc(sizeof(*th_id));
         *th_id = i;
-        if(pthread_create(&ths[i], NULL, request_manager, (void*)th_id)!=0){
-            return 1;   //TODO: Error handling
-        }
+        pthread_create(&ths[i], NULL, request_manager, (void*)th_id);
+        //TODO: Error handling
+    
     }
 
     listenfd = Open_listenfd(port);
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
             else if (strcmp(schedalg, "dt")==0){
                 Close(connfd);
                 add_to_waiting = false;
-                // break;
+                // pthread_mutex_unlock(&lock);
             }
             else if (strcmp(schedalg, "dh")==0){
                 if (!RequestQueue_isempty(waiting_q)){
@@ -170,6 +170,8 @@ int main(int argc, char *argv[])
                 else{
                     Close(connfd);
                     add_to_waiting = false;
+                    // pthread_mutex_unlock(&lock);
+
                 }
             }
             else if (strcmp(schedalg, "bf")==0){
@@ -179,7 +181,7 @@ int main(int argc, char *argv[])
                 }
                 Close(connfd);
                 add_to_waiting = false;
-
+                // pthread_mutex_unlock(&lock);
                 // break;
             }
             else if (strcmp(schedalg, "dynamic")==0){
@@ -191,6 +193,8 @@ int main(int argc, char *argv[])
                     ++(running_q->capacity);
                     ++queuesize;
                 }
+                // pthread_mutex_unlock(&lock);
+
                 // break;
             }
             else if (strcmp(schedalg, "random")==0){
@@ -198,7 +202,7 @@ int main(int argc, char *argv[])
                 if (RequestQueue_isempty(waiting_q)){
                     Close(connfd);
                     add_to_waiting = false;
-                    // break;
+                    // pthread_mutex_unlock(&lock);
                 }
                 else{
                     int end_num = (int)((RequestQueue_size(waiting_q))/2);
@@ -234,7 +238,7 @@ int main(int argc, char *argv[])
         
         err = RequestQueue_queue(waiting_q, connfd, th_stats.arrival);
         
-        assert(err==QUEUE_SUCCESS);
+        // assert(err==QUEUE_SUCCESS);
 
         pthread_cond_signal(&cond_th_empty);
         // printf("Server: Forwarded request to threads\n");
@@ -246,14 +250,7 @@ int main(int argc, char *argv[])
     RequestQueue_destroy(waiting_q);
     RequestQueue_destroy(running_q);
     
-    free(ths);
-    
-	// HW3: In general, don't handle the request in the main thread.
-	// Save the relevant info in a buffer and have one of the worker threads 
-	// do the work. 
-	// 
-
-    
+    free(ths);    
 
 }
 
