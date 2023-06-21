@@ -200,6 +200,7 @@ void requestHandle(int fd, ThreadStats* stats)
    /*STATS: total requests counter increment*/
    ++(stats->th_total_count);
    // /*=======================================*/
+   
    if (strcasecmp(method, "GET")) {
       requestError(fd, method, "501", "Not Implemented", "OS-HW3 Server does not implement this method", stats, dispatch);
       return;

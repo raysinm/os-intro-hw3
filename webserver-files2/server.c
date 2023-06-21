@@ -17,10 +17,10 @@
 RequestQueue* waiting_q;
 RequestQueue* running_q;
 
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond_th_empty = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_main_full = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_main_empty = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock;
+pthread_cond_t cond_th_empty;
+pthread_cond_t cond_main_full;
+pthread_cond_t cond_main_empty;
 
 __thread ThreadStats th_stats;
 
@@ -39,6 +39,7 @@ void* request_manager(void* id){    //id is int
     while (1){
         
         pthread_mutex_lock(&lock);
+        // FILE *file = fopen("queue_errs.txt", "a");
         while (RequestQueue_isempty(waiting_q)){
             // printf("Thread: waiting for request\n");
         //UNLOCK - ?
@@ -49,29 +50,36 @@ void* request_manager(void* id){    //id is int
 
         //STATS: arrival time
         th_stats.arrival = RequestQueue_head_arrival(waiting_q, &err);
-        
+        // fprintf(file,"%d\n", err);
         //Dequeueing from waiting and enqueueing to running
         int req_fd = RequestQueue_dequeue(waiting_q, &err);   //Also deletes the req from waiting_q
+        // fprintf(file,"%d\n", err);
+        err = RequestQueue_queue(running_q, req_fd, th_stats.arrival);
+        // fprintf(file,"%d\n", err);
         
-        RequestQueue_queue(running_q, req_fd, th_stats.arrival);
-        
-        
+        // fclose(file);
         pthread_mutex_unlock(&lock);
 
-        if (err != QUEUE_SUCCESS){
-            //HANDLE ERROR
-        }
         
         // ++(th_stats.th_total_count);
 
         //STATS: handle time
         // printf("Thread: Handling request\n");
-        requestHandle(req_fd, &th_stats);
-        Close(req_fd);
+        requestHandle(req_fd, &th_stats);   //th_stats on stack
+        
+        pthread_mutex_lock(&lock);
         //printf("Thread: handled and closed the request\n");
 
-        pthread_mutex_lock(&lock);
+        // file = fopen("queue_errs.txt", "a");
+        if (RequestQueue_isempty(running_q)){
+
+        }
         err = RequestQueue_dequeue_item(running_q, req_fd);
+        Close(req_fd);
+        
+        // fprintf(file,"%d\n", err);
+        
+        // fclose(file);
         //TODO: Check for errors
         pthread_cond_signal(&cond_main_full);
 
@@ -79,8 +87,9 @@ void* request_manager(void* id){    //id is int
             pthread_cond_signal(&cond_main_empty);
         }
         pthread_mutex_unlock(&lock);
+        
     }
-    return NULL;
+    // return NULL;
 }
 
 void getargs(int* port, int* threadsnum, int* queuesize, char* schedalg, int* max_size, int argc, char *argv[])
@@ -105,12 +114,19 @@ int main(int argc, char *argv[])
     char schedalg[13];
     struct sockaddr_in clientaddr;
     QueueError err;
-
+    
     getargs(&port, &threadsnum, &queuesize, schedalg, &max_size, argc, argv);
 
+    //Initialize lock, conds    
+    pthread_mutex_init(&lock, NULL);
+    pthread_cond_init(&cond_th_empty, NULL);
+    pthread_cond_init(&cond_main_full, NULL);
+    pthread_cond_init(&cond_main_empty, NULL);
+    
+
     // Initialize queues
-    waiting_q = RequestQueue_create(queuesize);
-    running_q = RequestQueue_create(queuesize);
+    waiting_q = RequestQueue_create(queuesize-threadsnum);
+    running_q = RequestQueue_create(threadsnum);
     
     // Initialize and create thread pool
     pthread_t* ths = (pthread_t*)malloc(threadsnum*sizeof(*ths));
@@ -128,16 +144,31 @@ int main(int argc, char *argv[])
 
     bool add_to_waiting = true;
 
+
+
+    int random_debug = 0;
+    int vals_null_debug = 0;
+    int full_debug = 0;
+    int accepts_debug = 0;
     while (1) {     // Server recieving requests
+        //DEBUG FILE:
+        // FILE *file = fopen("end_num.txt", "a");
 
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+        ++accepts_debug;
+        // if (file){
+        //     fprintf(file, "\nTotal accepts: %d\tfd: %d\n", accepts_debug, connfd);
+        // }
         gettimeofday(&(th_stats.arrival), NULL);
         //printf("Server: Recieved a request\n");
 
         pthread_mutex_lock(&lock);
         if (RequestQueue_size(waiting_q) + RequestQueue_size(running_q) >= queuesize){
-            
+            ++full_debug;
+            // if(file!=NULL){
+            //     fprintf(file, "Num of full times: %d\n", full_debug);
+            // }
             if (strcmp(schedalg, "block")==0){
                 while(RequestQueue_size(waiting_q) + RequestQueue_size(running_q) >= queuesize){
                     pthread_cond_wait(&cond_main_full, &lock);
@@ -181,7 +212,6 @@ int main(int argc, char *argv[])
 
                 if (queuesize < max_size){
                     ++(waiting_q->capacity);
-                    ++(running_q->capacity);
                     ++queuesize;
                 }
                 // pthread_mutex_unlock(&lock);
@@ -189,6 +219,7 @@ int main(int argc, char *argv[])
                 // break;
             }
             else if (strcmp(schedalg, "random")==0){
+                random_debug++;
                 // RequestQueue_drop_half_random(waiting_q);
                 if (RequestQueue_isempty(waiting_q)){
                     Close(connfd);
@@ -201,10 +232,10 @@ int main(int argc, char *argv[])
                     while(RequestQueue_size(waiting_q) > end_num){
                         int* vals = RequestQueue_get_vals(waiting_q);
                         
+                        int fd_drop;
                         if (vals != NULL){
                             int i_drop = rand()%(RequestQueue_size(waiting_q));
-                            int fd_drop = vals[i_drop];
-                            
+                            fd_drop = vals[i_drop];
                             err = RequestQueue_dequeue_item(waiting_q, fd_drop);
                             // assert(err==QUEUE_SUCCESS);
                             
@@ -212,8 +243,14 @@ int main(int argc, char *argv[])
                             free(vals);
                         }
                         else{
-                            break;
+                            ++vals_null_debug;
+                            continue;
                         }
+                    // FILE *file = fopen("end_num.txt", "a");
+                    // if (file!=NULL){
+                    //     fprintf(file, "Random entries: %d\tend_num: %d\tWaiting q size: %d\tRunning q size:%d\tfd_drop: %d\n", random_debug, end_num, RequestQueue_size(waiting_q), RequestQueue_size(running_q), fd_drop);
+                    //     fprintf(file, "vals_null: %d\n", vals_null_debug);
+                    // }
                     }
                     add_to_waiting = true;
                     // break;
@@ -221,8 +258,12 @@ int main(int argc, char *argv[])
             }
         }
 
+
         if (!add_to_waiting){
             pthread_mutex_unlock(&lock);
+            // if (file){
+            //     fclose(file);
+            // }            
             continue;
         }
         
@@ -236,12 +277,16 @@ int main(int argc, char *argv[])
         pthread_mutex_unlock(&lock);
         
         
+        // if (file){
+        //     fclose(file);
+        // }
     }
-
+    
     RequestQueue_destroy(waiting_q);
     RequestQueue_destroy(running_q);
     
-    free(ths);    
+    free(ths);  
+
 
 }
 
