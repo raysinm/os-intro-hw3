@@ -37,6 +37,7 @@ void RequestQueue_destroy(RequestQueue *queue){
         free(node);
         node = next;
     }
+    free(queue);
     return;
 }
 
@@ -52,7 +53,7 @@ QueueError RequestQueue_queue(RequestQueue* queue, int new_fd, struct timeval ar
 
     QueueNode* tail = queue->tail;
     QueueNode* new_node = QueueNode_create(new_fd, arrival);
-    if (tail == NULL){
+    if (queue->size == 0){
         queue->tail = new_node;
         queue->head = new_node;
         ++(queue->size);
@@ -90,6 +91,7 @@ int RequestQueue_dequeue(RequestQueue* queue, QueueError* error){
     
     --(queue->size);
     if (queue->size == 0){
+        queue->head = NULL;
         queue->tail = NULL;
     }
 
@@ -121,10 +123,20 @@ QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd){
     while(node != NULL){
         if (node->fd == target_fd){
             prev->next = node->next;
+
+            if(queue->head==node){
+                queue->head = node->next;
+            }
+
+            if (queue->tail==node){    //It's the last node
+                queue->tail = prev;
+            }
+            
             free(node);
 
             --(queue->size);
             if (queue->size == 0){
+                queue->head = NULL;
                 queue->tail = NULL;
             }
 
