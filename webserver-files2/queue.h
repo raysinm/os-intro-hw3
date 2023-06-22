@@ -1,3 +1,6 @@
+#ifndef __RQUEUE_H__
+#define __RQUEUE_H__
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -38,3 +41,6 @@ int RequestQueue_front(RequestQueue* queue, QueueError* error);
 int RequestQueue_size(RequestQueue* queue);
 int* RequestQueue_get_vals(RequestQueue* queue);
 void RequestQueue_drop_half_random(RequestQueue* queue);
+
+
+#endif /*__RQUEUE_H__*/

@@ -77,7 +77,7 @@ struct timeval RequestQueue_head_arrival(RequestQueue* queue, QueueError* error)
 }
 
 int RequestQueue_dequeue(RequestQueue* queue, QueueError* error){
-    if (queue->size == 0){
+    if (queue->size == 0 || queue->head==NULL){
         *error = QUEUE_EMPTY;
         return -1;
     }
@@ -108,8 +108,10 @@ QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd){
     if (queue->head->fd == target_fd){
 
         QueueNode* next_temp = queue->head->next;
+        
         free(queue->head);
         queue->head = next_temp;
+
 
         --(queue->size);
         if (queue->size == 0){
@@ -127,7 +129,6 @@ QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd){
     
     while(node != NULL){
         if (node->fd == target_fd){
-            prev->next = node->next;
 
             if(queue->head==node){
                 queue->head = node->next;
@@ -136,6 +137,7 @@ QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd){
             if (queue->tail==node){    //It's the last node
                 queue->tail = prev;
             }
+            prev->next = node->next;
             
             free(node);
 

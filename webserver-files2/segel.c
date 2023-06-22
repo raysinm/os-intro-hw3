@@ -567,3 +567,11 @@ int Open_listenfd(int port)
 
 
 
+/******************************************
+ * Wrappers for Helper Functions 
+ ******************************************/
+
+int Max(int a, int b){
+    return (a > b) ? a : b;
+}
+
