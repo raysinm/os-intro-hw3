@@ -193,6 +193,7 @@ void requestHandle(int fd, ThreadStats* stats)
    printf("%s %s %s\n", method, uri, version);
 
    /*STATS: dispatch calculation*/
+   // gettimeofday(&(stats->handle), NULL);
    struct timeval dispatch;
    timersub(&(stats->handle), &(stats->arrival), &dispatch);
    /*===========================*/

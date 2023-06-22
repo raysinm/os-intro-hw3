@@ -123,14 +123,14 @@ int main(int argc, char *argv[])
 
   pthread_t* ths = (pthread_t*)malloc(sizeof(*ths)*num_threads); 
 
-  for (int i=1; i<num_threads+1; i++){
+  for (int i=0; i<num_threads; i++){
     // int* fd = (int*)malloc(sizeof(int));
     // *fd = i;
     pthread_create(&ths[i], NULL, client_routine, NULL);
     // free(fd);
   } 
 
-  for (int i=1; i<num_threads+1; i++){
+  for (int i=0; i<num_threads; i++){
     pthread_join(ths[i],NULL);
   }
   // printf("Client: Returned from Close\n");

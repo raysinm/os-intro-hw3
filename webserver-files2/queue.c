@@ -51,19 +51,19 @@ QueueError RequestQueue_queue(RequestQueue* queue, int new_fd, struct timeval ar
         return QUEUE_FULL;
     }
 
-    QueueNode* tail = queue->tail;
+    // QueueNode* tail = queue->tail;
     QueueNode* new_node = QueueNode_create(new_fd, arrival);
     if (queue->size == 0){
         queue->tail = new_node;
         queue->head = new_node;
-        ++(queue->size);
-        return QUEUE_SUCCESS;
+    }
+    else{
+        if(queue->tail){
+            queue->tail->next = new_node;
+        }
+        queue->tail = new_node;
     }
 
-    
-
-    tail->next = new_node;
-    queue->tail = tail->next;
     ++(queue->size);
     return QUEUE_SUCCESS;
 }
@@ -101,25 +101,30 @@ int RequestQueue_dequeue(RequestQueue* queue, QueueError* error){
 }
 
 QueueError RequestQueue_dequeue_item(RequestQueue* queue, int target_fd){
-    if(queue->size == 0){
+    if(queue->size == 0 || queue->head==NULL){
         return QUEUE_EMPTY;
     }
-    QueueNode* node = queue->head->next;
-    QueueNode* prev = queue->head;
 
     if (queue->head->fd == target_fd){
-        queue->head = queue->head->next;
-        free(prev);
+
+        QueueNode* next_temp = queue->head->next;
+        free(queue->head);
+        queue->head = next_temp;
 
         --(queue->size);
         if (queue->size == 0){
             queue->head = NULL;
             queue->tail = NULL;
         }
-
+        // else if (queue->size == 1){
+        //     queue->tail = queue->head;
+        // }
         return QUEUE_SUCCESS;
     }
 
+    QueueNode* node = queue->head->next;
+    QueueNode* prev = queue->head;
+    
     while(node != NULL){
         if (node->fd == target_fd){
             prev->next = node->next;
