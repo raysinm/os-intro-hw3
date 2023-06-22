@@ -51,6 +51,11 @@ void* request_manager(void* id){    //id is int
             pthread_cond_wait(&cond_th_run_full, &lock);
         }
 
+        if(RequestQueue_isempty(waiting_q)){
+            pthread_mutex_unlock(&lock);
+            continue;
+        }
+
         //STATS: arrival time
         th_stats.arrival = RequestQueue_head_arrival(waiting_q, &err);
         // fprintf(file,"%d\n", err);
@@ -233,7 +238,7 @@ int main(int argc, char *argv[])
                 // pthread_mutex_unlock(&lock);
             }
             else if (strcmp(schedalg, "dh")==0){
-                if (RequestQueue_size(waiting_q)>0){
+                if (RequestQueue_size(waiting_q) > 0){
                     int fd_drop = RequestQueue_dequeue(waiting_q, &err);
                     Close(fd_drop);
                     // debug = fopen("debug.txt", "a");
