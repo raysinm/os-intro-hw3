@@ -21,6 +21,8 @@
  *
  */
 
+#include <pthread.h>
+
 #include "segel.h"
 
 /*
@@ -71,21 +73,17 @@ void clientPrint(int fd)
   }
 }
 
-int main(int argc, char *argv[])
-{
-  char *host, *filename;
-  int port;
+
+char *host, *filename;
+int port;
+
+void* client_routine(){
+  
   int clientfd;
+  // int clientfd = *(int*)fd;
+  // free(fd); 
 
-  if (argc != 4) {
-    fprintf(stderr, "Usage: %s <host> <port> <filename>\n", argv[0]);
-    exit(1);
-  }
-
-  host = argv[1];
-  port = atoi(argv[2]);
-  filename = argv[3];
-
+  
   /* Open a single connection to the specified host and port */
   clientfd = Open_clientfd(host, port);
   
@@ -101,7 +99,43 @@ int main(int argc, char *argv[])
   
   Close(clientfd);
 
+  pthread_exit(NULL);
+
+}
+
+int main(int argc, char *argv[])
+{
+  
+  int num_threads = 1;
+
+  if (argc < 4 || argc > 6) {
+    fprintf(stderr, "Usage: %s <host> <port> <filename> <num_client_threads>(Optional)\n", argv[0]);
+    exit(1);
+  }
+
+  host = argv[1];
+  port = atoi(argv[2]);
+  filename = argv[3];
+
+  if (argc==5){
+    num_threads = atoi(argv[4]);
+  }
+
+  pthread_t* ths = (pthread_t*)malloc(sizeof(*ths)*num_threads); 
+
+  for (int i=1; i<num_threads+1; i++){
+    // int* fd = (int*)malloc(sizeof(int));
+    // *fd = i;
+    pthread_create(&ths[i], NULL, client_routine, NULL);
+    // free(fd);
+  } 
+
+  for (int i=1; i<num_threads+1; i++){
+    pthread_join(ths[i],NULL);
+  }
   // printf("Client: Returned from Close\n");
+  
+  free(ths);
 
   exit(0);
 }
